@@ -31,6 +31,7 @@ function App() {
   const [strainsData, setStrainsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('menu');
+  const [selectedStrain, setSelectedStrain] = useState(null);
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
@@ -41,56 +42,78 @@ function App() {
           ...row, 
           thc: parseInt(row.thc, 10) || 0,
           startingPrice: parseInt(row.startingPrice, 10) || 0,
-          tagColor: getColorHex(row.tagColor)
+          tagColor: getColorHex(row.tagColor),
+          tiers: [{size: "1g", price: row.startingPrice}, {size: "3g", price: row.startingPrice + 50}]
         })));
         setLoading(false);
       }
     });
   }, []);
 
+  const addToCart = (strain, tier) => { setCart([...cart, { ...strain, selectedTier: tier, cartId: Date.now() }]); setSelectedStrain(null); setActiveTab('cart'); };
+  const removeFromCart = (cartId) => { setCart(cart.filter(item => item.cartId !== cartId)); };
+  const calculateTotal = () => cart.reduce((sum, item) => sum + (item.selectedTier?.price || 0), 0);
+
+  const handleCheckout = async () => {
+    const orderText = `🛒 Order: ${cart.map(i => `${i.name}`).join(', ')} | Total: €${calculateTotal()}`;
+    await fetch("https://hook.eu1.make.com/uftj5ohu25p63a5a7656fnlclbetra8s", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: orderText })
+    });
+    setCart([]); setActiveTab('menu');
+    alert("Order Sent!");
+  };
+
+  if (loading) return <div style={{background:'#0a0a0a', minHeight:'100vh', display:'flex', justifyContent:'center', alignItems:'center', color:'#ffaa00'}}><h2>Loading...</h2></div>;
+
+  if (selectedStrain) {
+    return (
+      <div style={{ background: '#0a0a0a', minHeight: '100vh', color: '#fff', padding: '20px' }}>
+        <button onClick={() => setSelectedStrain(null)} style={{ background: 'none', border: 'none', color: '#fff' }}>← Back</button>
+        <MediaDisplay type={selectedStrain.mediaType} url={selectedStrain.mediaUrl} />
+        <h1>{selectedStrain.name}</h1>
+        {selectedStrain.tiers.map((tier, idx) => (
+          <div key={idx} style={{ padding: '10px', border: '1px solid #333', marginTop: '10px' }} onClick={() => addToCart(selectedStrain, tier)}>
+            {tier.size} - €{tier.price}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: '#0a0a0a', backgroundImage: `url(${appBackground})`, backgroundAttachment: 'fixed', minHeight: '100vh', color: '#fff', paddingBottom: '100px' }}>
-      <div style={{ textAlign: 'center', padding: '20px' }}>
-        <img src={transparentLogo} alt="Logo" style={{ maxWidth: '170px' }} /> 
-      </div>
-
+      <div style={{ textAlign: 'center', padding: '20px' }}><img src={transparentLogo} alt="Logo" style={{ maxWidth: '170px' }} /></div>
+      
       {activeTab === 'menu' && (
         <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          {strainsData.map((strain, index) => {
-            const isSoldOut = strain.status?.toLowerCase() === 'sold out';
-            return (
-             <div key={index} style={{ background: 'rgba(18, 18, 18, 0.9)', backdropFilter: 'blur(5px)', borderRadius: '14px', overflow: 'hidden', padding: '10px', border: '1px solid #222' }}>
-               <div style={{ position: 'relative' }}>
-                 <MediaDisplay type={strain.mediaType} url={strain.mediaUrl} />
-                 <span style={{ position: 'absolute', top: '5px', right: '5px', background: strain.tagColor, fontSize: '9px', padding: '2px 6px', borderRadius: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>{strain.category}</span>
-                 {isSoldOut && <div style={{position:'absolute', top:'0', left:'0', width:'100%', height:'160px', background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'900', color:'#ff4757'}}>SOLD OUT</div>}
-               </div>
-               
-               <h3 style={{ fontSize: '13px', margin: '10px 0 5px 0', fontWeight: '900' }}>{strain.name}</h3>
-               
-               <div style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
-                 <GeneticsTag type={strain.genetics} />
-                 <span style={{ fontSize: '9px', background: '#333', padding: '2px 6px', borderRadius: '4px' }}>{strain.thc}% THC</span>
-               </div>
-               
-               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '4px', marginBottom: '10px' }}>
-                 <span style={{ fontSize: '7px', color: '#888', textTransform: 'uppercase' }}>Dope's Strength</span>
-                 <StarRating thc={strain.thc} />
-               </div>
-
-               <div style={{ fontSize: '14px', fontWeight: '900', color: isSoldOut ? '#555' : '#e67e22' }}>From €{strain.startingPrice}</div>
-             </div>
-          )})}
+          {strainsData.map((strain, index) => (
+            <div key={index} onClick={() => setSelectedStrain(strain)} style={{ background: 'rgba(18,18,18,0.9)', padding: '10px', borderRadius: '14px', border: '1px solid #222' }}>
+              <MediaDisplay type={strain.mediaType} url={strain.mediaUrl} />
+              <h3 style={{ fontSize: '13px', margin: '10px 0' }}>{strain.name}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <StarRating thc={strain.thc} />
+                <div style={{ fontSize: '14px', color: '#e67e22' }}>€{strain.startingPrice}</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {activeTab === 'cart' && <div style={{padding:'20px', color:'#fff', textAlign:'center'}}><h2>Cart</h2><p>Your cart is empty.</p></div>}
-      {activeTab === 'info' && <div style={{padding:'20px', color:'#fff', textAlign:'center'}}><h2>Info Page</h2></div>}
+      {activeTab === 'cart' && (
+        <div style={{ padding: '20px' }}>
+          <h2>Cart</h2>
+          {cart.map(item => <div key={item.cartId}>{item.name} €{item.selectedTier.price} <button onClick={() => removeFromCart(item.cartId)}>X</button></div>)}
+          {cart.length > 0 && <button onClick={handleCheckout}>Checkout €{calculateTotal()}</button>}
+        </div>
+      )}
 
-      <div style={{ position: 'fixed', bottom: '0', left: '0', right: '0', height: '60px', background: 'rgba(10,10,10,0.95)', display: 'flex', justifyContent: 'space-around', alignItems: 'center', borderTop:'1px solid #333' }}>
-        <button onClick={() => setActiveTab('menu')} style={{ background:'none', border:'none', color: activeTab === 'menu' ? '#e67e22' : '#fff', fontSize:'12px', fontWeight:'bold' }}>MENU</button>
-        <button onClick={() => setActiveTab('cart')} style={{ background:'none', border:'none', color: activeTab === 'cart' ? '#e67e22' : '#fff', fontSize:'12px', fontWeight:'bold' }}>CART</button>
-        <button onClick={() => setActiveTab('info')} style={{ background:'none', border:'none', color: activeTab === 'info' ? '#e67e22' : '#fff', fontSize:'12px', fontWeight:'bold' }}>INFO</button>
+      {activeTab === 'info' && <div style={{padding:'20px'}}><h2>Info</h2><p>Welcome to the shop.</p></div>}
+
+      <div style={{ position: 'fixed', bottom: '0', left: '0', right: '0', height: '60px', background: '#111', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+        <button onClick={() => setActiveTab('menu')}>MENU</button>
+        <button onClick={() => setActiveTab('cart')}>CART</button>
+        <button onClick={() => setActiveTab('info')}>INFO</button>
       </div>
     </div>
   );
