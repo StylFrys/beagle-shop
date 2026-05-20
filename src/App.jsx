@@ -7,7 +7,8 @@ const strainsData = [
   { 
     id: 1, 
     name: "Tropicana Cherry", 
-    category: "Dry Base", 
+    category: "Dry Base",
+    genetics: "Sativa",
     description: "Plata o Plomo. Exceptional terpene retention with a stable, smooth texture.", 
     thc: 18, 
     startingPrice: 150, 
@@ -23,7 +24,8 @@ const strainsData = [
   { 
     id: 2, 
     name: "Matrix #1", 
-    category: "Hash", 
+    category: "Hash",
+    genetics: "Indica",
     description: "Premium sift, highly stable ambient consistency.", 
     thc: 22, 
     startingPrice: 160, 
@@ -38,7 +40,8 @@ const strainsData = [
   { 
     id: 3, 
     name: "WPFF Extraction", 
-    category: "Rosin", 
+    category: "Rosin",
+    genetics: "Hybrid",
     description: "Whole Plant Fresh Frozen live rosin execution. Cold cured.", 
     thc: 73, 
     startingPrice: 90, 
@@ -78,6 +81,20 @@ const StarRating = ({ thc }) => {
       {[1,2,3,4,5].map(i => <GTAStar key={i} filled={i <= count} />)}
       <span style={{ fontSize: '10px', color: '#ccc', marginLeft: '8px', fontWeight: 'bold' }}>{thc}% THC</span>
     </div>
+  );
+};
+
+// Genetics Tag Component
+const GeneticsTag = ({ type }) => {
+  let bgColor = "#555";
+  if (type.toLowerCase() === 'sativa') bgColor = "#e15f41";
+  if (type.toLowerCase() === 'indica') bgColor = "#786fa6";
+  if (type.toLowerCase() === 'hybrid') bgColor = "#3dc1d3";
+
+  return (
+    <span style={{ background: bgColor, color: '#fff', fontSize: '9px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      {type}
+    </span>
   );
 };
 
@@ -186,8 +203,9 @@ function App() {
 
         <div style={{ padding: '20px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>{selectedStrain.name}</h1>
-          <div style={{ marginBottom: '15px' }}>
+          <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <StarRating thc={selectedStrain.thc} />
+            <GeneticsTag type={selectedStrain.genetics} />
           </div>
           <p style={{ color: '#ccc', fontSize: '15px', lineHeight: '1.6', margin: '0 0 30px 0' }}>{selectedStrain.description}</p>
           
@@ -233,8 +251,9 @@ function App() {
               <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
                 
-                <div style={{ marginBottom: '12px' }}>
+                <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <StarRating thc={strain.thc} />
+                  <GeneticsTag type={strain.genetics} />
                 </div>
 
                 <div style={{ background: 'rgba(0, 0, 0, 0.5)', borderRadius: '8px', padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
