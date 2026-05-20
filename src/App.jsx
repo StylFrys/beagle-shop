@@ -9,7 +9,7 @@ const strainsData = [
     name: "Tropicana Cherry", 
     category: "Dry Base", 
     description: "Plata o Plomo. Exceptional terpene retention with a stable, smooth texture.", 
-    thc: 18, // 3 Stars
+    thc: 18, 
     startingPrice: 150, 
     tagColor: "#ff4757",
     mediaType: "video",
@@ -25,7 +25,7 @@ const strainsData = [
     name: "Matrix #1", 
     category: "Hash", 
     description: "Premium sift, highly stable ambient consistency.", 
-    thc: 22, // 4 Stars
+    thc: 22, 
     startingPrice: 160, 
     tagColor: "#e67e22",
     mediaType: "image",
@@ -40,7 +40,7 @@ const strainsData = [
     name: "WPFF Extraction", 
     category: "Rosin", 
     description: "Whole Plant Fresh Frozen live rosin execution. Cold cured.", 
-    thc: 73, // 5 Stars
+    thc: 73, 
     startingPrice: 90, 
     tagColor: "#0984e3",
     mediaType: "video",
@@ -114,14 +114,29 @@ function App() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+
+    // Retrieve Telegram User Info Automatically
+    const tg = window.Telegram?.WebApp;
+    const user = tg?.initDataUnsafe?.user;
+
+    const buyerName = user?.first_name || "Unknown Web User";
+    const buyerUsername = user?.username ? `@${user.username}` : "No Public Username";
+    const buyerId = user?.id || null;
     
     let orderText = "🛒 *NEW ORDER - BEAGLE BOYZ*\n\n";
     cart.forEach(item => {
       orderText += `▪️ ${item.name} (${item.selectedTier.size}) : ${item.selectedTier.price}\n`;
     });
-    orderText += `\n💰 *Total: €${calculateTotal()}*`;
+    orderText += `\n💰 *Total: €${calculateTotal()}*\n\n`;
+    
+    // Append Buyer Identification Meta
+    orderText += `👤 *Customer Profile:*\n`;
+    orderText += `▪️ Name: ${buyerName}\n`;
+    orderText += `▪️ Handle: ${buyerUsername}\n`;
+    if (buyerId) {
+      orderText += `▪️ Direct Action: [Open Chat](tg://user?id=${buyerId})\n`;
+    }
 
-    // Make.com Webhook Integration
     const webhookUrl = "https://hook.eu1.make.com/uftj5ohu25p63a5a7656fnlclbetra8s";
 
     try {
@@ -131,7 +146,7 @@ function App() {
         body: JSON.stringify({ message: orderText })
       });
       
-      alert("Order successfully transmitted!");
+      alert("Order sent and the countdown to highness has begun! 🚀");
       setCart([]);
       setActiveTab('menu');
     } catch (error) {
@@ -139,7 +154,6 @@ function App() {
     }
   };
 
-  // COMMON WRAPPER FOR BACKGROUND
   const appStyle = {
     background: '#0a0a0a', 
     backgroundImage: `url(${appBackground})`, 
@@ -153,22 +167,16 @@ function App() {
     paddingBottom: '100px'
   };
 
-  // ------------------------------------
-  // VIEW: Product Detail Page
-  // ------------------------------------
   if (selectedStrain) {
     return (
       <div style={appStyle}>
-        {/* Relative Detail Header */}
         <div style={{ position: 'relative', zIndex: 100, display: 'flex', alignItems: 'center', padding: '15px 20px 5px 20px' }}>
           <button onClick={() => setSelectedStrain(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', marginRight: '15px', padding: 0 }}>
             ←
           </button>
-          {/* Logo size increased */}
           <img src={transparentLogo} alt="Logo" style={{ maxWidth: '120px', height: 'auto' }} /> 
         </div>
 
-        {/* Hero Media Container */}
         <div style={{ position: 'relative', width: '100%', height: '350px', background: '#111' }}>
           <MediaDisplay type={selectedStrain.mediaType} url={selectedStrain.mediaUrl} alt={selectedStrain.name} />
           <span style={{ position: 'absolute', top: '15px', right: '15px', background: selectedStrain.tagColor, color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', boxShadow: '0 4px 6px rgba(0,0,0,0.5)' }}>
@@ -176,7 +184,6 @@ function App() {
           </span>
         </div>
 
-        {/* Product Details & Matrix */}
         <div style={{ padding: '20px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>{selectedStrain.name}</h1>
           <div style={{ marginBottom: '15px' }}>
@@ -206,15 +213,9 @@ function App() {
     );
   }
 
-  // ------------------------------------
-  // VIEW: Main Content (Menu or Cart)
-  // ------------------------------------
   return (
     <div style={appStyle}>
-      
-      {/* Top Header - Padding adjusted to tighten gap */}
       <div style={{ position: 'relative', zIndex: 50, textAlign: 'center', padding: '15px 20px 0px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Logo size increased */}
         <img src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '170px', height: 'auto' }} /> 
       </div>
 
@@ -232,7 +233,6 @@ function App() {
               <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
                 
-                {/* GTA Stars Rating in Grid */}
                 <div style={{ marginBottom: '12px' }}>
                   <StarRating thc={strain.thc} />
                 </div>
@@ -271,16 +271,39 @@ function App() {
               </div>
 
               <button onClick={handleCheckout} style={{ background: '#ffaa00', color: '#000', border: 'none', padding: '18px', borderRadius: '12px', fontWeight: '900', fontSize: '16px', marginTop: '20px', cursor: 'pointer', textTransform: 'uppercase' }}>
-                Send Order to Bot
+                SEND ORDER
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Fixed Bottom Navigation Dock */}
+      {activeTab === 'info' && (
+        <div style={{ padding: '10px 20px' }}>
+          <h2 style={{ fontSize: '20px', margin: '0 0 15px 0', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Info & Process</h2>
+          
+          <div style={{ background: 'rgba(20, 20, 20, 0.85)', backdropFilter: 'blur(10px)', borderRadius: '14px', border: '1px solid #333', padding: '20px' }}>
+            <h3 style={{ color: '#e67e22', margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Steps to Get High</h3>
+            
+            <ol style={{ paddingLeft: '20px', margin: 0, color: '#ddd', lineHeight: '1.8', fontSize: '15px' }}>
+              <li style={{ marginBottom: '15px' }}>
+                <span style={{ fontWeight: '700', color: '#fff' }}>Check out our premium selections</span> and find the best fit for you!
+              </li>
+              <li style={{ marginBottom: '15px' }}>
+                <span style={{ fontWeight: '700', color: '#fff' }}>Fill your cart</span> with our goodies and send the order!
+              </li>
+              <li style={{ marginBottom: '15px' }}>
+                <span style={{ fontWeight: '700', color: '#fff' }}>Expect a message from us</span> within the next few minutes to arrange delivery.
+              </li>
+              <li>
+                <span style={{ fontWeight: '700', color: '#fff' }}>Light it up</span> and enjoy! 💨
+              </li>
+            </ol>
+          </div>
+        </div>
+      )}
+
       <div style={{ position: 'fixed', bottom: '0', left: '0', right: '0', height: '70px', background: 'rgba(10,10,10,0.95)', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 1000 }}>
-        
         <button onClick={() => setActiveTab('menu')} style={{ background: 'none', border: 'none', color: activeTab === 'menu' ? '#e67e22' : '#555', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
           <span style={{ fontSize: '22px' }}>⚏</span>
           <span style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '1px' }}>MENU</span>
@@ -300,7 +323,6 @@ function App() {
           <span style={{ fontSize: '22px' }}>ℹ</span>
           <span style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '1px' }}>INFO</span>
         </button>
-
       </div>
     </div>
   );
