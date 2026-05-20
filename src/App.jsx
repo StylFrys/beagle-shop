@@ -1,61 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 import transparentLogo from './MEDIA/Beagles trasnparent logo.png';
 import appBackground from './MEDIA/Beagles background.png';
 
-// Product Data
-const strainsData = [
-  { 
-    id: 1, 
-    name: "Tropicana Cherry", 
-    category: "Buds", 
-    genetics: "Sativa",
-    description: "Plata o Plomo. Exceptional terpene retention with a stable, smooth texture.", 
-    thc: 18, 
-    startingPrice: 150, 
-    tagColor: "#ff4757",
-    mediaType: "video",
-    mediaUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", 
-    tiers: [
-      { size: "25g", price: "€150" },
-      { size: "50g", price: "€260" },
-      { size: "100g", price: "€450" }
-    ]
-  },
-  { 
-    id: 2, 
-    name: "Matrix #1", 
-    category: "Hash",
-    genetics: "Indica",
-    description: "Premium sift, highly stable ambient consistency.", 
-    thc: 22, 
-    startingPrice: 160, 
-    tagColor: "#e67e22",
-    mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1536623975707-c4b9b3af545d?auto=format&fit=crop&w=400&q=80",
-    tiers: [
-      { size: "25g", price: "€160" },
-      { size: "50g", price: "€290" }
-    ]
-  },
-  { 
-    id: 3, 
-    name: "WPFF Extraction", 
-    category: "Rosin",
-    genetics: "Hybrid",
-    description: "Whole Plant Fresh Frozen live rosin execution. Cold cured.", 
-    thc: 73, 
-    startingPrice: 90, 
-    tagColor: "#0984e3",
-    mediaType: "video",
-    mediaUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", 
-    tiers: [
-      { size: "10g", price: "€90" },
-      { size: "20g", price: "€170" }
-    ]
-  }
-];
+// Color Translator (Words to Hex)
+const getColorHex = (colorName) => {
+  const colors = {
+    'red': '#ff4757',
+    'orange': '#e67e22',
+    'blue': '#0984e3',
+    'green': '#2ed573',
+    'purple': '#9b59b6',
+    'pink': '#ff9ff3',
+    'yellow': '#feca57'
+  };
+  return colors[colorName?.toLowerCase()] || '#555'; 
+};
 
-// GTA San Andreas Style Star SVG (Dynamic Size Support)
+// GTA San Andreas Style Star SVG
 const GTAStar = ({ filled, size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" style={{ margin: '0 1px', filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.8))' }}>
     <path
@@ -68,7 +30,6 @@ const GTAStar = ({ filled, size = 14 }) => (
   </svg>
 );
 
-// Potency Logic Component
 const StarRating = ({ thc, size = 14 }) => {
   let count = 1;
   if (thc >= 10 && thc < 15) count = 2;
@@ -83,7 +44,6 @@ const StarRating = ({ thc, size = 14 }) => {
   );
 };
 
-// Genetics Tag Component (Standardized Pill)
 const GeneticsTag = ({ type }) => {
   if (!type || type.toLowerCase() === 'none' || type.trim() === '') return null;
   
@@ -99,7 +59,6 @@ const GeneticsTag = ({ type }) => {
   );
 };
 
-// Reusable Media Component
 const MediaDisplay = ({ type, url, alt }) => {
   if (type === 'video') {
     return (
@@ -112,9 +71,51 @@ const MediaDisplay = ({ type, url, alt }) => {
 };
 
 function App() {
+  const [strainsData, setStrainsData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('menu');
   const [selectedStrain, setSelectedStrain] = useState(null);
   const [cart, setCart] = useState([]);
+
+  useEffect(() => {
+    // INSERT YOUR GOOGLE SHEET CSV LINK BELOW
+    const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMDNd_J2nMddIt3927OuBVC2TLvbNcCQSwjQsfGEWmpJpt0rmsL-WRBbEo4w4UkPjlJInP4_zGxWLv/pub?output=csv";
+    
+    Papa.parse(sheetCsvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const formattedData = results.data.map(row => {
+          const tiers = [];
+          if (row.tier1_size && row.tier1_price) tiers.push({ size: row.tier1_size, price: row.tier1_price });
+          if (row.tier2_size && row.tier2_price) tiers.push({ size: row.tier2_size, price: row.tier2_price });
+          if (row.tier3_size && row.tier3_price) tiers.push({ size: row.tier3_size, price: row.tier3_price });
+          
+          return {
+            id: row.id,
+            name: row.name,
+            category: row.category,
+            genetics: row.genetics,
+            description: row.description,
+            thc: parseInt(row.thc, 10) || 0,
+            startingPrice: parseInt(row.startingPrice, 10) || 0,
+            tagColor: getColorHex(row.tagColor), // Translates the word to Hex automatically
+            mediaType: row.mediaType,
+            mediaUrl: row.mediaUrl,
+            status: row.status || 'Available',
+            tiers: tiers
+          };
+        });
+        setStrainsData(formattedData);
+        setLoading(false);
+      },
+      error: (error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    });
+  }, []);
 
   const addToCart = (strain, tier) => {
     setCart([...cart, { ...strain, selectedTier: tier, cartId: Date.now() }]);
@@ -183,7 +184,17 @@ function App() {
     paddingBottom: '100px'
   };
 
+  if (loading) {
+    return (
+      <div style={{ ...appStyle, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <h2 style={{ color: '#ffaa00' }}>Loading Menu...</h2>
+      </div>
+    );
+  }
+
   if (selectedStrain) {
+    const isSoldOut = selectedStrain.status?.toLowerCase() === 'sold out';
+
     return (
       <div style={appStyle}>
         <div style={{ position: 'relative', zIndex: 100, display: 'flex', alignItems: 'center', padding: '15px 20px 5px 20px' }}>
@@ -195,6 +206,8 @@ function App() {
 
         <div style={{ position: 'relative', width: '100%', height: '350px', background: '#111' }}>
           <MediaDisplay type={selectedStrain.mediaType} url={selectedStrain.mediaUrl} alt={selectedStrain.name} />
+          
+          {/* Top Right Tag */}
           <span style={{ position: 'absolute', top: '15px', right: '15px', background: selectedStrain.tagColor, color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', boxShadow: '0 4px 6px rgba(0,0,0,0.5)' }}>
             {selectedStrain.category}
           </span>
@@ -219,16 +232,27 @@ function App() {
           <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', margin: '0 0 15px 0', fontWeight: '800' }}>Select Volume</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {selectedStrain.tiers.map((tier, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 15, 15, 0.9)', border: '1px solid #333', padding: '15px 20px', borderRadius: '12px' }}>
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 15, 15, 0.9)', border: '1px solid #333', padding: '15px 20px', borderRadius: '12px', opacity: isSoldOut ? 0.5 : 1 }}>
                 <div>
                   <span style={{ fontWeight: '700', fontSize: '18px', color: '#fff', display: 'block' }}>{tier.size}</span>
-                  <span style={{ color: '#e67e22', fontWeight: '800', fontSize: '16px' }}>{tier.price}</span>
+                  <span style={{ color: isSoldOut ? '#888' : '#e67e22', fontWeight: '800', fontSize: '16px' }}>{tier.price}</span>
                 </div>
                 <button 
-                  onClick={() => addToCart(selectedStrain, tier)}
-                  style={{ background: '#ffaa00', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', fontSize: '14px', cursor: 'pointer' }}
+                  onClick={() => { if (!isSoldOut) addToCart(selectedStrain, tier) }}
+                  disabled={isSoldOut}
+                  style={{ 
+                    background: isSoldOut ? '#333' : '#ffaa00', 
+                    color: isSoldOut ? '#666' : '#000', 
+                    border: 'none', 
+                    padding: '10px 20px', 
+                    borderRadius: '8px', 
+                    fontWeight: '900', 
+                    fontSize: '14px', 
+                    cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                    boxShadow: isSoldOut ? 'none' : '0 4px 10px rgba(255, 170, 0, 0.3)'
+                  }}
                 >
-                  ADD
+                  {isSoldOut ? 'SOLD OUT' : 'ADD'}
                 </button>
               </div>
             ))}
@@ -240,48 +264,62 @@ function App() {
 
   return (
     <div style={appStyle}>
-      {/* Tighter padding to reduce logo gap */}
       <div style={{ position: 'relative', zIndex: 50, textAlign: 'center', padding: '10px 20px 0px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <img src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '170px', height: 'auto' }} /> 
       </div>
 
       {activeTab === 'menu' && (
         <div style={{ padding: '5px 20px 20px 20px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
-          {strainsData.map((strain) => (
-            <div key={strain.id} onClick={() => setSelectedStrain(strain)} style={{ background: 'rgba(18, 18, 18, 0.9)', backdropFilter: 'blur(5px)', borderRadius: '14px', overflow: 'hidden', border: '1px solid #222', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ position: 'relative', width: '100%', height: '160px', background: '#000' }}>
-                <MediaDisplay type={strain.mediaType} url={strain.mediaUrl} alt={strain.name} />
-                <span style={{ position: 'absolute', top: '10px', right: '10px', background: strain.tagColor, color: '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                  {strain.category}
-                </span>
-              </div>
-              
-              <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
+          {strainsData.map((strain) => {
+            const isSoldOut = strain.status?.toLowerCase() === 'sold out';
+            
+            return (
+              <div key={strain.id} onClick={() => setSelectedStrain(strain)} style={{ background: 'rgba(18, 18, 18, 0.9)', backdropFilter: 'blur(5px)', borderRadius: '14px', overflow: 'hidden', border: '1px solid #222', cursor: 'pointer', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <GeneticsTag type={strain.genetics} />
-                    <span style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '9px', fontWeight: 'bold', padding: '0 6px', borderRadius: '4px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', letterSpacing: '0.5px' }}>{strain.thc}% THC</span>
-                  </div>
+                <div style={{ position: 'relative', width: '100%', height: '160px', background: '#000' }}>
+                  <MediaDisplay type={strain.mediaType} url={strain.mediaUrl} alt={strain.name} />
                   
-                  {/* Stacked Strength Text with dynamically scaled Stars */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '4px 6px', borderRadius: '4px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <span style={{ fontSize: '7px', color: '#aaa', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.2' }}>Dope's</span>
-                      <span style={{ fontSize: '7px', color: '#aaa', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.2' }}>Strength</span>
-                    </div>
-                    <StarRating thc={strain.thc} size={11} />
-                  </div>
-                </div>
+                  {/* Category Pill */}
+                  <span style={{ position: 'absolute', top: '10px', right: '10px', background: strain.tagColor, color: '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', zIndex: 5 }}>
+                    {strain.category}
+                  </span>
 
-                <div style={{ background: 'rgba(0, 0, 0, 0.5)', borderRadius: '8px', padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: '#888', fontWeight: '600' }}>From</span>
-                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#e67e22' }}>€{strain.startingPrice}</span>
+                  {/* SOLD OUT OVERLAY */}
+                  {isSoldOut && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                      <div style={{ background: '#ff4757', color: '#fff', padding: '6px 14px', borderRadius: '6px', fontWeight: '900', letterSpacing: '2px', fontSize: '14px', transform: 'rotate(-10deg)', border: '2px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+                        SOLD OUT
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', opacity: isSoldOut ? 0.6 : 1 }}>
+                  <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <GeneticsTag type={strain.genetics} />
+                      <span style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '9px', fontWeight: 'bold', padding: '0 6px', borderRadius: '4px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', letterSpacing: '0.5px' }}>{strain.thc}% THC</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '4px 6px', borderRadius: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '7px', color: '#aaa', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.2' }}>Dope's</span>
+                        <span style={{ fontSize: '7px', color: '#aaa', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: '1.2' }}>Strength</span>
+                      </div>
+                      <StarRating thc={strain.thc} size={11} />
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(0, 0, 0, 0.5)', borderRadius: '8px', padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: '600' }}>From</span>
+                    <span style={{ fontSize: '14px', fontWeight: '900', color: isSoldOut ? '#888' : '#e67e22' }}>€{strain.startingPrice}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
