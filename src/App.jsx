@@ -100,8 +100,8 @@ function App() {
 
   const addToCart = (strain, tier) => {
     setCart([...cart, { ...strain, selectedTier: tier, cartId: Date.now() }]);
-    setSelectedStrain(null); // Return to menu after adding
-    setActiveTab('cart');    // Jump to cart to confirm
+    setSelectedStrain(null); 
+    setActiveTab('cart');    
   };
 
   const removeFromCart = (cartId) => {
@@ -112,7 +112,7 @@ function App() {
     return cart.reduce((sum, item) => sum + parseInt(item.selectedTier.price.replace('€', '')), 0);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
     
     let orderText = "🛒 *NEW ORDER - BEAGLE BOYZ*\n\n";
@@ -121,13 +121,21 @@ function App() {
     });
     orderText += `\n💰 *Total: €${calculateTotal()}*`;
 
-    // Connects to Telegram environment. Since BotFather Menu buttons don't support direct
-    // .sendData(), this alerts the payload. You can hook this to a bot webhook later.
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.showAlert("Order payload prepared for Bot:\n\n" + orderText);
-    } else {
-      alert(orderText);
+    // Make.com Webhook Integration
+    const webhookUrl = "https://hook.eu1.make.com/uftj5ohu25p63a5a7656fnlclbetra8s";
+
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: orderText })
+      });
+      
+      alert("Order successfully transmitted!");
+      setCart([]);
+      setActiveTab('menu');
+    } catch (error) {
+      alert("Error transmitting order. Please verify your connection.");
     }
   };
 
@@ -151,12 +159,13 @@ function App() {
   if (selectedStrain) {
     return (
       <div style={appStyle}>
-        {/* Relative Detail Header - Fixes scroll blend */}
+        {/* Relative Detail Header */}
         <div style={{ position: 'relative', zIndex: 100, display: 'flex', alignItems: 'center', padding: '15px 20px 5px 20px' }}>
           <button onClick={() => setSelectedStrain(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', marginRight: '15px', padding: 0 }}>
             ←
           </button>
-          <img src={transparentLogo} alt="Logo" style={{ maxWidth: '100px', height: 'auto' }} /> 
+          {/* Logo size increased */}
+          <img src={transparentLogo} alt="Logo" style={{ maxWidth: '120px', height: 'auto' }} /> 
         </div>
 
         {/* Hero Media Container */}
@@ -203,13 +212,14 @@ function App() {
   return (
     <div style={appStyle}>
       
-      {/* Top Header - Now Relative to prevent scroll collision */}
-      <div style={{ position: 'relative', zIndex: 50, textAlign: 'center', padding: '20px 20px 10px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <img src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '140px', height: 'auto' }} /> 
+      {/* Top Header - Padding adjusted to tighten gap */}
+      <div style={{ position: 'relative', zIndex: 50, textAlign: 'center', padding: '15px 20px 0px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {/* Logo size increased */}
+        <img src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '170px', height: 'auto' }} /> 
       </div>
 
       {activeTab === 'menu' && (
-        <div style={{ padding: '5px 20px 20px 20px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+        <div style={{ padding: '10px 20px 20px 20px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
           {strainsData.map((strain) => (
             <div key={strain.id} onClick={() => setSelectedStrain(strain)} style={{ background: 'rgba(18, 18, 18, 0.9)', backdropFilter: 'blur(5px)', borderRadius: '14px', overflow: 'hidden', border: '1px solid #222', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
               <div style={{ position: 'relative', width: '100%', height: '160px', background: '#000' }}>
