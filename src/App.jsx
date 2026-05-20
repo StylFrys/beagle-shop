@@ -7,7 +7,7 @@ const strainsData = [
   { 
     id: 1, 
     name: "Tropicana Cherry", 
-    category: "Dry Base",
+    category: "Buds", 
     genetics: "Sativa",
     description: "Plata o Plomo. Exceptional terpene retention with a stable, smooth texture.", 
     thc: 18, 
@@ -57,7 +57,7 @@ const strainsData = [
 
 // GTA San Andreas Style Star SVG
 const GTAStar = ({ filled }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" style={{ margin: '0 1px', filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.8))' }}>
+  <svg width="14" height="14" viewBox="0 0 24 24" style={{ margin: '0 1px', filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.8))' }}>
     <path
       d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
       fill={filled ? "#ffaa00" : "rgba(255,255,255,0.15)"}
@@ -68,7 +68,7 @@ const GTAStar = ({ filled }) => (
   </svg>
 );
 
-// Potency Logic Component
+// Potency Logic Component - Padding adjusted for mobile
 const StarRating = ({ thc }) => {
   let count = 1;
   if (thc >= 10 && thc < 15) count = 2;
@@ -77,22 +77,24 @@ const StarRating = ({ thc }) => {
   else if (thc >= 24) count = 5;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px', width: 'fit-content' }}>
+    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '3px 6px', borderRadius: '4px', width: 'fit-content' }}>
       {[1,2,3,4,5].map(i => <GTAStar key={i} filled={i <= count} />)}
-      <span style={{ fontSize: '10px', color: '#ccc', marginLeft: '8px', fontWeight: 'bold' }}>{thc}% THC</span>
+      <span style={{ fontSize: '9px', color: '#ccc', marginLeft: '6px', fontWeight: 'bold' }}>{thc}% THC</span>
     </div>
   );
 };
 
-// Genetics Tag Component
+// Genetics Tag Component - Empty state supported, padding adjusted
 const GeneticsTag = ({ type }) => {
+  if (!type || type.toLowerCase() === 'none' || type.trim() === '') return null;
+  
   let bgColor = "#555";
   if (type.toLowerCase() === 'sativa') bgColor = "#e15f41";
   if (type.toLowerCase() === 'indica') bgColor = "#786fa6";
   if (type.toLowerCase() === 'hybrid') bgColor = "#3dc1d3";
 
   return (
-    <span style={{ background: bgColor, color: '#fff', fontSize: '9px', fontWeight: '900', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+    <span style={{ background: bgColor, color: '#fff', fontSize: '8px', fontWeight: '900', padding: '3px 6px', borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
       {type}
     </span>
   );
@@ -203,10 +205,13 @@ function App() {
 
         <div style={{ padding: '20px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>{selectedStrain.name}</h1>
-          <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          
+          {/* Detail View Metadata - Wrap enabled */}
+          <div style={{ marginBottom: '15px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
             <StarRating thc={selectedStrain.thc} />
             <GeneticsTag type={selectedStrain.genetics} />
           </div>
+
           <p style={{ color: '#ccc', fontSize: '15px', lineHeight: '1.6', margin: '0 0 30px 0' }}>{selectedStrain.description}</p>
           
           <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', margin: '0 0 15px 0', fontWeight: '800' }}>Select Volume</h3>
@@ -251,7 +256,8 @@ function App() {
               <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
                 
-                <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Grid View Metadata - Wrap enabled to fix mobile overflow */}
+                <div style={{ marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
                   <StarRating thc={strain.thc} />
                   <GeneticsTag type={strain.genetics} />
                 </div>
