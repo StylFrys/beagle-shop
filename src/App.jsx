@@ -4,9 +4,9 @@ import transparentLogo from './MEDIA/Beagles trasnparent logo.png';
 import appBackground from './MEDIA/Beagles background.png';
 import candyShopAudio from './MEDIA/candy_shop.mp3';
 
-// GTA San Andreas Style Star SVG
+// GTA San Andreas Style Star SVG (Scaled down to 13px to fit mobile grid)
 const GTAStar = ({ filled }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" style={{ margin: '0 1px', filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.8))' }}>
+  <svg width="13" height="13" viewBox="0 0 24 24" style={{ margin: '0 1px', filter: 'drop-shadow(1px 1px 0px rgba(0,0,0,0.8))' }}>
     <path
       d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
       fill={filled ? "#ffaa00" : "rgba(255,255,255,0.15)"}
@@ -17,7 +17,7 @@ const GTAStar = ({ filled }) => (
   </svg>
 );
 
-// Potency Logic Component (Updated: Decoupled THC text for better layout control)
+// Potency Logic Component 
 const StarRating = ({ thc }) => {
   let count = 1;
   if (thc >= 10 && thc < 15) count = 2;
@@ -283,7 +283,6 @@ function App() {
         <div style={{ padding: '20px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>{selectedStrain.name}</h1>
           
-          {/* UPDATED: Detail View Layout */}
           <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px', width: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <GeneticsTag type={selectedStrain.genetics} />
@@ -347,14 +346,14 @@ function App() {
               <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
                 
-                {/* UPDATED: Menu View Grid Layout */}
                 <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <GeneticsTag type={strain.genetics} />
                     <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#ccc', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px' }}>{strain.thc}% THC</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px' }}>
-                    <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: '800' }}>Strength</span>
+                  {/* UPDATED: Scaled down text and tighter padding for the Strength row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '4px 6px', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '9px', color: '#888', textTransform: 'uppercase', fontWeight: '800' }}>Strength</span>
                     <StarRating thc={strain.thc} />
                   </div>
                 </div>
