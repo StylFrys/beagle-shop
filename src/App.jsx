@@ -17,7 +17,7 @@ const GTAStar = ({ filled }) => (
   </svg>
 );
 
-// Potency Logic Component
+// Potency Logic Component (Updated: Decoupled THC text for better layout control)
 const StarRating = ({ thc }) => {
   let count = 1;
   if (thc >= 10 && thc < 15) count = 2;
@@ -26,9 +26,8 @@ const StarRating = ({ thc }) => {
   else if (thc >= 24) count = 5;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px', width: 'fit-content' }}>
+    <div style={{ display: 'flex', alignItems: 'center' }}>
       {[1,2,3,4,5].map(i => <GTAStar key={i} filled={i <= count} />)}
-      <span style={{ fontSize: '10px', color: '#ccc', marginLeft: '8px', fontWeight: 'bold' }}>{thc}% THC</span>
     </div>
   );
 };
@@ -74,16 +73,13 @@ function App() {
   const rightNoteRef = useRef(null);
   const leftNoteRef = useRef(null);
 
-  // Initialize Telegram & Fetch Data
   useEffect(() => {
-    // 1. Force Telegram Full Screen
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
-    // 2. Fetch CSV Data
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMDNd_J2nMddIt3927OuBVC2TLvbNcCQSwjQsfGEWmpJpt0rmsL-WRBbEo4w4UkPjlJInP4_zGxWLv/pub?output=csv";
 
     Papa.parse(csvUrl, {
@@ -286,10 +282,19 @@ function App() {
 
         <div style={{ padding: '20px' }}>
           <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900' }}>{selectedStrain.name}</h1>
-          <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <StarRating thc={selectedStrain.thc} />
-            <GeneticsTag type={selectedStrain.genetics} />
+          
+          {/* UPDATED: Detail View Layout */}
+          <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px', width: 'fit-content' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <GeneticsTag type={selectedStrain.genetics} />
+              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#ccc', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px' }}>{selectedStrain.thc}% THC</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.4)', padding: '6px 10px', borderRadius: '6px' }}>
+              <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: '800' }}>Strength</span>
+              <StarRating thc={selectedStrain.thc} />
+            </div>
           </div>
+
           <p style={{ color: '#ccc', fontSize: '15px', lineHeight: '1.6', margin: '0 0 30px 0' }}>{selectedStrain.description}</p>
           
           <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', margin: '0 0 15px 0', fontWeight: '800' }}>Select Volume</h3>
@@ -342,9 +347,16 @@ function App() {
               <div style={{ padding: '12px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '900', color: '#fff', lineHeight: '1.2' }}>{strain.name}</h3>
                 
-                <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <StarRating thc={strain.thc} />
-                  <GeneticsTag type={strain.genetics} />
+                {/* UPDATED: Menu View Grid Layout */}
+                <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <GeneticsTag type={strain.genetics} />
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#ccc', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px' }}>{strain.thc}% THC</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '4px 8px', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase', fontWeight: '800' }}>Strength</span>
+                    <StarRating thc={strain.thc} />
+                  </div>
                 </div>
 
                 <div style={{ background: 'rgba(0, 0, 0, 0.5)', borderRadius: '8px', padding: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
