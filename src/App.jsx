@@ -1,59 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Papa from 'papaparse';
 import transparentLogo from './MEDIA/Beagles trasnparent logo.png';
 import appBackground from './MEDIA/Beagles background.png';
-
-// Product Data
-const strainsData = [
-  { 
-    id: 1, 
-    name: "Tropicana Cherry", 
-    category: "Dry Base",
-    genetics: "Sativa",
-    description: "Plata o Plomo. Exceptional terpene retention with a stable, smooth texture.", 
-    thc: 18, 
-    startingPrice: 150, 
-    tagColor: "#ff4757",
-    mediaType: "video",
-    mediaUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4", 
-    tiers: [
-      { size: "25g", price: "€150" },
-      { size: "50g", price: "€260" },
-      { size: "100g", price: "€450" }
-    ]
-  },
-  { 
-    id: 2, 
-    name: "Matrix #1", 
-    category: "Hash",
-    genetics: "Indica",
-    description: "Premium sift, highly stable ambient consistency.", 
-    thc: 22, 
-    startingPrice: 160, 
-    tagColor: "#e67e22",
-    mediaType: "image",
-    mediaUrl: "https://images.unsplash.com/photo-1536623975707-c4b9b3af545d?auto=format&fit=crop&w=400&q=80",
-    tiers: [
-      { size: "25g", price: "€160" },
-      { size: "50g", price: "€290" }
-    ]
-  },
-  { 
-    id: 3, 
-    name: "WPFF Extraction", 
-    category: "Rosin",
-    genetics: "Hybrid",
-    description: "Whole Plant Fresh Frozen live rosin execution. Cold cured.", 
-    thc: 73, 
-    startingPrice: 90, 
-    tagColor: "#0984e3",
-    mediaType: "video",
-    mediaUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4", 
-    tiers: [
-      { size: "10g", price: "€90" },
-      { size: "20g", price: "€170" }
-    ]
-  }
-];
+import candyShopAudio from './MEDIA/candy_shop.mp3';
 
 // GTA San Andreas Style Star SVG
 const GTAStar = ({ filled }) => (
@@ -114,6 +63,135 @@ function App() {
   const [activeTab, setActiveTab] = useState('menu');
   const [selectedStrain, setSelectedStrain] = useState(null);
   const [cart, setCart] = useState([]);
+  const [strainsData, setStrainsData] = useState([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  const audioRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationRef = useRef(null);
+  const logoRef = useRef(null);
+  const rightNoteRef = useRef(null);
+  const leftNoteRef = useRef(null);
+
+  // Initialize Telegram & Fetch Data
+  useEffect(() => {
+    // 1. Force Telegram Full Screen
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // 2. Fetch CSV Data
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMDNd_J2nMddIt3927OuBVC2TLvbNcCQSwjQsfGEWmpJpt0rmsL-WRBbEo4w4UkPjlJInP4_zGxWLv/pub?output=csv";
+
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsedData = results.data.map((row, index) => {
+          const tiers = [];
+          let t = 1;
+          while (row[`tier${t}_size`] && row[`tier${t}_price`]) {
+            const size = row[`tier${t}_size`].trim();
+            const price = row[`tier${t}_price`].trim();
+            if (size && price) {
+              tiers.push({ size, price });
+            }
+            t++;
+          }
+
+          return {
+            id: row.id || index + 1,
+            name: row.name || "Unnamed Strain",
+            category: row.category || "General",
+            genetics: row.genetics || "Hybrid",
+            description: row.description || "",
+            thc: parseInt(row.thc) || 0,
+            startingPrice: row.startingPrice || "0",
+            tagColor: row.tagColor || "#555",
+            mediaType: row.mediaType || "image",
+            mediaUrl: row.mediaUrl || "",
+            tiers: tiers
+          };
+        }).filter(item => item.tiers.length > 0);
+
+        setStrainsData(parsedData);
+      },
+      error: (error) => {
+        console.error("Error fetching or parsing CSV:", error);
+      }
+    });
+  }, []);
+
+  const visualize = () => {
+    if (!analyserRef.current) return;
+    
+    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(dataArray);
+
+    let bassSum = 0;
+    for (let i = 0; i < 5; i++) {
+      bassSum += dataArray[i];
+    }
+    const bassAvg = bassSum / 5;
+    const scale = 1 + (bassAvg / 255) * 0.15;
+
+    if (logoRef.current) {
+      logoRef.current.style.transform = `scale(${scale})`;
+      logoRef.current.style.transition = 'transform 0.05s ease-out';
+    }
+    if (rightNoteRef.current) {
+      rightNoteRef.current.style.transform = `scale(${scale})`;
+      rightNoteRef.current.style.transition = 'transform 0.05s ease-out';
+    }
+    if (leftNoteRef.current) {
+      leftNoteRef.current.style.transform = `scaleX(-${scale}) scaleY(${scale})`;
+      leftNoteRef.current.style.transition = 'transform 0.05s ease-out';
+    }
+
+    animationRef.current = requestAnimationFrame(visualize);
+  };
+
+  const toggleAudio = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      cancelAnimationFrame(animationRef.current);
+      if (logoRef.current) logoRef.current.style.transform = 'scale(1)';
+      if (rightNoteRef.current) rightNoteRef.current.style.transform = 'scale(1)';
+      if (leftNoteRef.current) leftNoteRef.current.style.transform = 'scaleX(-1) scaleY(1)';
+      setIsPlaying(false);
+    } else {
+      audio.currentTime = 0;
+
+      if (!audioCtxRef.current) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(audio);
+        const analyser = audioCtx.createAnalyser();
+        
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        audioCtxRef.current = audioCtx;
+        analyserRef.current = analyser;
+      }
+
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+
+      audio.play().catch(e => console.error("Audio playback failed:", e));
+      setIsPlaying(true);
+      visualize();
+    }
+  };
 
   const addToCart = (strain, tier) => {
     setCart([...cart, { ...strain, selectedTier: tier, cartId: Date.now() }]);
@@ -132,7 +210,6 @@ function App() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    // Retrieve Telegram User Info Automatically
     const tg = window.Telegram?.WebApp;
     const user = tg?.initDataUnsafe?.user;
 
@@ -146,7 +223,6 @@ function App() {
     });
     orderText += `\n💰 *Total: €${calculateTotal()}*\n\n`;
     
-    // Append Buyer Identification Meta
     orderText += `👤 *Customer Profile:*\n`;
     orderText += `▪️ Name: ${buyerName}\n`;
     orderText += `▪️ Handle: ${buyerUsername}\n`;
@@ -187,11 +263,18 @@ function App() {
   if (selectedStrain) {
     return (
       <div style={appStyle}>
-        <div style={{ position: 'relative', zIndex: 100, display: 'flex', alignItems: 'center', padding: '15px 20px 5px 20px' }}>
-          <button onClick={() => setSelectedStrain(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', marginRight: '15px', padding: 0 }}>
+        <div style={{ position: 'relative', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px 20px 5px 20px' }}>
+          <button onClick={() => setSelectedStrain(null)} style={{ position: 'absolute', left: '20px', background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', padding: 0 }}>
             ←
           </button>
-          <img src={transparentLogo} alt="Logo" style={{ maxWidth: '120px', height: 'auto' }} /> 
+          
+          <div ref={leftNoteRef} onClick={toggleAudio} style={{ cursor: 'pointer', fontSize: '28px', marginRight: '15px', filter: 'drop-shadow(2px 2px 0px #ff4757)', userSelect: 'none', transform: 'scaleX(-1)' }}>
+            {isPlaying ? '🔊' : '🎵'}
+          </div>
+          <img ref={logoRef} src={transparentLogo} alt="Logo" style={{ maxWidth: '120px', height: 'auto' }} /> 
+          <div ref={rightNoteRef} onClick={toggleAudio} style={{ cursor: 'pointer', fontSize: '28px', marginLeft: '15px', filter: 'drop-shadow(2px 2px 0px #ff4757)', userSelect: 'none' }}>
+            {isPlaying ? '🔊' : '🎵'}
+          </div>
         </div>
 
         <div style={{ position: 'relative', width: '100%', height: '350px', background: '#111' }}>
@@ -227,14 +310,22 @@ function App() {
             ))}
           </div>
         </div>
+        
+        <audio ref={audioRef} src={candyShopAudio} loop />
       </div>
     );
   }
 
   return (
     <div style={appStyle}>
-      <div style={{ position: 'relative', zIndex: 50, textAlign: 'center', padding: '15px 20px 0px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <img src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '170px', height: 'auto' }} /> 
+      <div style={{ position: 'relative', zIndex: 50, padding: '15px 20px 0px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <div ref={leftNoteRef} onClick={toggleAudio} style={{ cursor: 'pointer', fontSize: '32px', marginRight: '15px', filter: 'drop-shadow(2px 2px 0px #ff4757)', userSelect: 'none', transform: 'scaleX(-1)' }}>
+          {isPlaying ? '🔊' : '🎵'}
+        </div>
+        <img ref={logoRef} src={transparentLogo} alt="Beagle Boyz Logo" style={{ maxWidth: '170px', height: 'auto' }} /> 
+        <div ref={rightNoteRef} onClick={toggleAudio} style={{ cursor: 'pointer', fontSize: '32px', marginLeft: '15px', filter: 'drop-shadow(2px 2px 0px #ff4757)', userSelect: 'none' }}>
+          {isPlaying ? '🔊' : '🎵'}
+        </div>
       </div>
 
       {activeTab === 'menu' && (
@@ -343,6 +434,8 @@ function App() {
           <span style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '1px' }}>INFO</span>
         </button>
       </div>
+      
+      <audio ref={audioRef} src={candyShopAudio} loop />
     </div>
   );
 }
